@@ -28,7 +28,8 @@ const activityConfig = {
     label: 'Idle', 
     icon: '💤',
     gradient: 'from-gray-500/20 to-gray-600/20',
-    glow: 'shadow-gray-500/20'
+    glow: 'shadow-gray-500/20',
+    animate: false
   },
   typing: { 
     color: 'yellow', 
@@ -51,7 +52,8 @@ const activityConfig = {
     label: 'Discussing', 
     icon: '💬',
     gradient: 'from-green-500/20 to-emerald-500/20',
-    glow: 'shadow-green-500/30'
+    glow: 'shadow-green-500/30',
+    animate: false
   },
   problem_solving: { 
     color: 'purple', 

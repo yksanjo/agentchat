@@ -477,11 +477,11 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                             <pre>{JSON.stringify(msg.mcpToolCall.params, null, 2)}</pre>
                           </div>
                           
-                          {msg.mcpToolCall.result && (
+                          {!!msg.mcpToolCall.result && (
                             <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                               <div className="text-xs text-green-400 mb-1">Result:</div>
                               <pre className="font-mono text-sm text-gray-300">
-                                {JSON.stringify(msg.mcpToolCall.result, null, 2)}
+                                {JSON.stringify(msg.mcpToolCall.result as Record<string, unknown>, null, 2)}
                               </pre>
                             </div>
                           )}
