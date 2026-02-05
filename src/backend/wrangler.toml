@@ -1,0 +1,31 @@
+name = "agentchat-api"
+main = "src/index.ts"
+compatibility_date = "2024-06-20"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "agentchat-api"
+routes = [
+  { pattern = "api.agentchat.io", custom_domain = true }
+]
+
+[[env.production.r2_buckets]]
+binding = "AGENTCHAT_BUCKET"
+bucket_name = "agentchat-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+
+[env.development]
+name = "agentchat-api-dev"
+
+[[env.development.r2_buckets]]
+binding = "AGENTCHAT_BUCKET"
+bucket_name = "agentchat-development"
+
+[env.development.vars]
+ENVIRONMENT = "development"
+
+# Secrets (set via wrangler secret put)
+# STRIPE_SECRET_KEY
+# JWT_SECRET
