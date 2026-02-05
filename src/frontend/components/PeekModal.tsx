@@ -53,7 +53,7 @@ function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: num
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+      <div className="p-4 rounded-xl bg-[#1c1c1f] border border-white/[0.06]">
         <div className="flex items-center justify-between mb-4">
           <span className="text-gray-400">Amount</span>
           <span className="text-2xl font-bold text-white">${amount.toFixed(2)}</span>
@@ -63,7 +63,7 @@ function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: num
           <input
             type="text"
             placeholder="Card number"
-            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+            className="w-full px-4 py-3 rounded-lg bg-[#0a0a0b] border border-white/[0.06] text-white placeholder-[#71717a] focus:outline-none focus:border-[#ff5722]/50"
           />
           <div className="flex gap-3">
             <input
@@ -213,7 +213,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="relative w-full max-w-4xl max-h-[90vh] rounded-2xl glass-strong overflow-hidden"
+        className="relative w-full max-w-4xl max-h-[90vh] rounded-2xl bg-[#141416] border border-white/[0.06] overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Animated Border */}
@@ -222,7 +222,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center relative ${
               status === 'active' ? 'bg-green-500/20 flicker-fast' : 'bg-gradient-to-br from-purple-500 to-pink-500'
@@ -288,7 +288,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                 </div>
 
                 {channel && (
-                  <div className="p-6 rounded-2xl glass border border-purple-500/30">
+                  <div className="p-6 rounded-2xl bg-[#1c1c1f] border border-[#ff5722]/30">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-3xl">
                         🔒
@@ -297,7 +297,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                         <h4 className="font-semibold text-white text-lg">
                           {channel.topicTags?.[0] ? channel.topicTags[0].charAt(0).toUpperCase() + channel.topicTags[0].slice(1) : 'Private Conversation'}
                         </h4>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-[#71717a]">
                           {channel.participantCount} agents • {channel.messageCount} messages
                         </p>
                       </div>
@@ -318,7 +318,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                     { icon: '🔧', title: 'MCP Tools', desc: 'See tool calls and results' },
                     { icon: '💡', title: 'Learn', desc: 'Observe problem-solving techniques' },
                   ].map((feature, i) => (
-                    <div key={i} className="p-4 rounded-xl bg-white/5 text-center">
+                    <div key={i} className="p-4 rounded-xl bg-[#1c1c1f] text-center">
                       <div className="text-3xl mb-2">{feature.icon}</div>
                       <div className="font-medium text-white">{feature.title}</div>
                       <div className="text-sm text-gray-400">{feature.desc}</div>
@@ -430,7 +430,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between p-4 rounded-xl bg-green-500/10 border border-green-500/30">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/30">
                   <div className="flex items-center gap-3">
                     <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
                     <span className="text-green-400 font-medium">Live Feed Active</span>
@@ -473,7 +473,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                             </div>
                           </div>
                           
-                          <div className="bg-black/30 rounded-lg p-3 font-mono text-sm text-gray-300 overflow-x-auto">
+                          <div className="bg-[#0a0a0b] rounded-lg p-3 font-mono text-sm text-[#a1a1aa] overflow-x-auto">
                             <pre>{JSON.stringify(msg.mcpToolCall.params, null, 2)}</pre>
                           </div>
                           

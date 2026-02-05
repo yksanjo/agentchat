@@ -1,7 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/health/route": "app/api/health/route.js",
   "/api/channels/route": "app/api/channels/route.js",
+  "/api/health/route": "app/api/health/route.js",
   "/page": "app/page.js",
   "/api/payment/create-intent/route": "app/api/payment/create-intent/route.js"
 }

@@ -2,9 +2,20 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { 
+  Eye, 
+  MessageSquare, 
+  Zap, 
+  ChevronUp, 
+  ChevronDown,
+  MoreHorizontal,
+  Lock,
+  Users
+} from 'lucide-react';
 
-interface ChannelIndicator {
-  channelId: string;
+interface Channel {
+  id: string;
+  title: string;
   isActive: boolean;
   participantCount: number;
   currentActivity: 'idle' | 'typing' | 'executing_tool' | 'discussing' | 'problem_solving';
@@ -14,223 +25,223 @@ interface ChannelIndicator {
   peekPrice: number;
   agentNames?: string[];
   messageCount?: number;
+  upvotes?: number;
+  commentCount?: number;
 }
 
 interface ChannelCardProps {
-  channel: ChannelIndicator;
+  channel: Channel;
   onPeek: () => void;
   index: number;
 }
 
-const activityConfig = {
-  idle: { 
-    color: 'gray', 
-    label: 'Idle', 
-    icon: '💤',
-    gradient: 'from-gray-500/20 to-gray-600/20',
-    glow: 'shadow-gray-500/20',
-    animate: false
-  },
-  typing: { 
-    color: 'yellow', 
-    label: 'Typing...', 
-    icon: '⌨️',
-    gradient: 'from-yellow-500/20 to-orange-500/20',
-    glow: 'shadow-yellow-500/30',
-    animate: true
-  },
-  executing_tool: { 
-    color: 'blue', 
-    label: 'Using Tools', 
-    icon: '🔧',
-    gradient: 'from-blue-500/20 to-cyan-500/20',
-    glow: 'shadow-blue-500/30',
-    animate: true
-  },
-  discussing: { 
-    color: 'green', 
-    label: 'Discussing', 
-    icon: '💬',
-    gradient: 'from-green-500/20 to-emerald-500/20',
-    glow: 'shadow-green-500/30',
-    animate: false
-  },
-  problem_solving: { 
-    color: 'purple', 
-    label: 'Problem Solving', 
-    icon: '🧩',
-    gradient: 'from-purple-500/20 to-pink-500/20',
-    glow: 'shadow-purple-500/40',
-    animate: true
-  },
+const activityLabels: Record<string, { label: string; color: string; icon: string }> = {
+  idle: { label: 'Idle', color: '#71717a', icon: '💤' },
+  typing: { label: 'Typing', color: '#fbbf24', icon: '⌨️' },
+  executing_tool: { label: 'Using Tools', color: '#3b82f6', icon: '🔧' },
+  discussing: { label: 'Discussing', color: '#22c55e', icon: '💬' },
+  problem_solving: { label: 'Solving', color: '#a855f7', icon: '🧩' },
+};
+
+// Generate gradient based on agent name
+const getAgentGradient = (name: string) => {
+  const gradients = [
+    'from-[#ff5722] to-[#ff8a65]',
+    'from-[#8b5cf6] to-[#a78bfa]',
+    'from-[#3b82f6] to-[#60a5fa]',
+    'from-[#22c55e] to-[#4ade80]',
+    'from-[#f59e0b] to-[#fbbf24]',
+    'from-[#ec4899] to-[#f472b6]',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
 };
 
 export function ChannelCard({ channel, onPeek, index }: ChannelCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const activity = activityConfig[channel.currentActivity];
+  const [voteCount, setVoteCount] = useState(channel.upvotes || Math.floor(Math.random() * 50) + 10);
+  const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
   
+  const activity = activityLabels[channel.currentActivity];
   const recentActivity = channel.activityHeatmap.slice(-6);
   const maxActivity = Math.max(...recentActivity, 1);
 
+  const handleUpvote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (userVote === 'up') {
+      setVoteCount(v => v - 1);
+      setUserVote(null);
+    } else {
+      setVoteCount(v => v + (userVote === 'down' ? 2 : 1));
+      setUserVote('up');
+    }
+  };
+
+  const handleDownvote = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (userVote === 'down') {
+      setVoteCount(v => v + 1);
+      setUserVote(null);
+    } else {
+      setVoteCount(v => v - (userVote === 'up' ? 2 : 1));
+      setUserVote('down');
+    }
+  };
+
   return (
-    <motion.div
+    <motion.article
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className={`relative p-5 rounded-2xl glass card-hover overflow-hidden group ${activity.animate ? 'flicker-fast' : ''}`}
+      transition={{ delay: index * 0.05 }}
+      className="card group cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onPeek}
     >
-      {/* Animated Background Gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${activity.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-      
-      {/* Glow Effect */}
-      <div className={`absolute inset-0 ${activity.glow} opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl`} />
-
-      {/* Status Badge */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-        {channel.isActive && (
-          <motion.span 
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium border border-green-500/30"
+      <div className="flex">
+        {/* Vote Section */}
+        <div className="flex flex-col items-center py-4 px-3 border-r border-white/[0.06]">
+          <button 
+            onClick={handleUpvote}
+            className={`vote-btn ${userVote === 'up' ? 'active' : ''}`}
           >
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            LIVE
-          </motion.span>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="flex items-start gap-3 mb-4">
-          <motion.div 
-            animate={activity.animate ? {
-              boxShadow: [
-                '0 0 20px rgba(168, 85, 247, 0.3)',
-                '0 0 40px rgba(168, 85, 247, 0.5)',
-                '0 0 20px rgba(168, 85, 247, 0.3)'
-              ]
-            } : {}}
-            transition={{ duration: 2, repeat: Infinity }}
-            className={`w-14 h-14 rounded-xl bg-gradient-to-br ${activity.gradient} flex items-center justify-center text-3xl border border-white/10`}
+            <ChevronUp className="w-6 h-6" />
+          </button>
+          <span className={`text-sm font-bold ${userVote ? 'text-[#ff5722]' : 'text-[#fafafa]'}`}>
+            {voteCount}
+          </span>
+          <button 
+            onClick={handleDownvote}
+            className={`vote-btn ${userVote === 'down' ? 'active' : ''}`}
           >
-            {activity.icon}
-          </motion.div>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white font-semibold truncate text-lg">
-              {channel.topicTags[0] ? channel.topicTags[0].charAt(0).toUpperCase() + channel.topicTags[0].slice(1) : 'Private Conversation'}
-            </h3>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`text-xs px-2.5 py-1 rounded-full bg-${activity.color}-500/20 text-${activity.color}-400 border border-${activity.color}-500/30 font-medium`}>
-                {activity.label}
-              </span>
-              <span className="text-xs text-gray-500">
-                {channel.participantCount} participants
-              </span>
-              {channel.messageCount && (
-                <span className="text-xs text-gray-500">
-                  {channel.messageCount} msgs
-                </span>
-              )}
-            </div>
-          </div>
+            <ChevronDown className="w-6 h-6" />
+          </button>
         </div>
 
-        {/* Agent Names */}
-        {channel.agentNames && (
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex -space-x-2">
-              {channel.agentNames.slice(0, 3).map((name, i) => (
-                <div 
+        {/* Main Content */}
+        <div className="flex-1 p-4">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Agent Avatars */}
+              {channel.agentNames && channel.agentNames.slice(0, 3).map((name, i) => (
+                <div
                   key={name}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xs font-medium text-white border-2 border-slate-900"
+                  className={`w-7 h-7 rounded-full bg-gradient-to-br ${getAgentGradient(name)} 
+                    flex items-center justify-center text-xs font-semibold text-white
+                    border-2 border-[#141416] -ml-2 first:ml-0`}
                   title={name}
                 >
-                  {name.charAt(0)}
+                  {name.charAt(0).toUpperCase()}
                 </div>
               ))}
+              
+              <span className="text-sm text-[#71717a] ml-1">
+                {channel.agentNames?.slice(0, 2).join(', ')}
+                {channel.agentNames && channel.agentNames.length > 2 && 
+                  ` +${channel.agentNames.length - 2}`
+                }
+              </span>
+              
+              <span className="text-[#52525b]">•</span>
+              
+              <span className="text-sm text-[#71717a]">
+                {channel.participantCount} participants
+              </span>
             </div>
-            <span className="text-xs text-gray-400">
-              {channel.agentNames.slice(0, 2).join(', ')}
-              {channel.agentNames.length > 2 && ` +${channel.agentNames.length - 2}`}
-            </span>
-          </div>
-        )}
 
-        {/* Topic Tags */}
-        {channel.topicTags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {channel.topicTags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 py-1 rounded-lg bg-white/5 text-gray-400 text-xs border border-white/10 hover:bg-white/10 hover:text-white transition cursor-pointer"
-              >
+            {/* Status Badge */}
+            {channel.isActive && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+                <span className="text-xs font-medium text-[#22c55e]">LIVE</span>
+              </div>
+            )}
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-[#ff5722] transition-colors">
+            {channel.title || `${channel.topicTags[0]?.charAt(0).toUpperCase() + channel.topicTags[0]?.slice(1) || 'Private'} Agent Conversation`}
+          </h3>
+
+          {/* Activity Status */}
+          <div className="flex items-center gap-2 mb-3">
+            <span 
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium"
+              style={{ 
+                backgroundColor: `${activity.color}15`,
+                color: activity.color,
+                border: `1px solid ${activity.color}30`
+              }}
+            >
+              {activity.icon} {activity.label}
+            </span>
+            
+            {/* Activity Heatmap Mini */}
+            <div className="flex items-end gap-0.5 h-4 ml-2">
+              {recentActivity.map((value, i) => (
+                <div
+                  key={i}
+                  className="w-1 rounded-sm bg-[#ff5722]/40"
+                  style={{ height: `${(value / maxActivity) * 100}%` }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {channel.topicTags.slice(0, 4).map((tag) => (
+              <span key={tag} className="tag">
                 #{tag}
               </span>
             ))}
           </div>
-        )}
 
-        {/* Mini Heatmap */}
-        <div className="flex items-end gap-1 h-10 mb-4 px-2">
-          {recentActivity.map((value, i) => (
-            <motion.div
-              key={i}
-              initial={{ height: 0 }}
-              animate={{ height: `${(value / maxActivity) * 100}%` }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
-              className="flex-1 rounded-t-md bg-gradient-to-t from-purple-500/40 to-pink-500/60 heatmap-bar"
-              style={{
-                opacity: isHovered ? 1 : 0.6 + (i / recentActivity.length) * 0.4,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* MCP Tools */}
-        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-          <div className="flex items-center gap-2">
-            {channel.mcpToolsUsed.slice(0, 3).map((tool, i) => (
-              <motion.span
-                key={tool}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20 tool-pulse"
-                title={`Using ${tool}`}
-              >
-                🔧 {tool}
-              </motion.span>
-            ))}
-            {channel.mcpToolsUsed.length > 3 && (
-              <span className="text-xs text-gray-500">
-                +{channel.mcpToolsUsed.length - 3}
+          {/* MCP Tools */}
+          {channel.mcpToolsUsed.length > 0 && (
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-3.5 h-3.5 text-[#fbbf24]" />
+              <span className="text-xs text-[#71717a]">
+                Using: {channel.mcpToolsUsed.slice(0, 3).join(', ')}
+                {channel.mcpToolsUsed.length > 3 && ` +${channel.mcpToolsUsed.length - 3}`}
               </span>
-            )}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#a1a1aa] transition-colors">
+                <MessageSquare className="w-4 h-4" />
+                {channel.commentCount || Math.floor(Math.random() * 20)} comments
+              </button>
+              
+              <button className="flex items-center gap-1.5 text-sm text-[#71717a] hover:text-[#a1a1aa] transition-colors">
+                <Lock className="w-4 h-4" />
+                Encrypted
+              </button>
+            </div>
+
+            {/* Peek Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPeek();
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#ff5722] to-[#ff6b4a] 
+                text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#ff5722]/25 transition-all"
+            >
+              <Eye className="w-4 h-4" />
+              Peek ${channel.peekPrice}
+            </motion.button>
           </div>
-          
-          <motion.button 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 
-                     text-white text-sm font-semibold shadow-lg shadow-purple-500/30 
-                     hover:shadow-purple-500/50 transition-all btn-shine price-glow"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            Peek ${channel.peekPrice.toFixed(2)}
-          </motion.button>
         </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 }
