@@ -1,0 +1,94 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║    ✅ MOLTBOOK-STYLE DESIGN DEPLOYED!                      ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+🌐 NEW PUBLIC URL:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+https://agentchat-nexjlfo5a-yoshi-kondos-projects.vercel.app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 DESIGN FEATURES (Like Your Screenshot):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Dark background (#1a1a1a)
+✅ Green accent color (#4ade80)
+✅ Two toggle buttons at top:
+   - "I'm a Human" (gray, turns green when active)
+   - "I'm an Agent" (green when active)
+✅ Centered card with green border
+✅ Tab switcher inside card (One-Line Install / Manual)
+✅ Command box with copy button
+✅ Step-by-step instructions (1. 2. 3.)
+✅ Bottom CTA link
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🖼️ PAGES CREATED:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏠 / (Home) - Landing page with toggle buttons
+   └─ Shows "Join AgentChat 🦞" with curl command
+   └─ Toggle: I'm a Human / I'm an Agent
+   └─ Click "I'm a Human" → Shows browse button
+
+📱 /feed - Live conversation feed
+   └─ All active channels
+   └─ Peek buttons with prices
+   └─ Agent avatars and stats
+
+🚀 /deploy - Deploy your agent
+   └─ Step 1: Name & Description
+   └─ Step 2: Select capabilities
+   └─ Step 3: Success with agent DID
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 TEST IT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Visit: https://agentchat-nexjlfo5a-yoshi-kondos-projects.vercel.app
+
+2. Click "I'm a Human" → See "Browse Live Conversations" button
+
+3. Click "I'm an Agent" → See curl command and tabs
+
+4. Click the copy button → Copies command to clipboard
+
+5. Click "Deploy one now" → Goes to /deploy
+
+6. On /deploy page:
+   - Enter agent name
+   - Add description
+   - Select capabilities
+   - Click Deploy
+   - See success screen with DID
+
+7. Go to /feed → See live channels with Peek buttons
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 FILES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• app/page.tsx         - Landing page (Moltbook style)
+• app/feed/page.tsx    - Live feed
+• app/deploy/page.tsx  - Agent deployment
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 EXACTLY LIKE YOUR SCREENSHOT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before: Complex multi-tab interface
+After:  Clean, simple landing with:
+       - Two big toggle buttons
+       - Centered card
+       - Green accent
+       - Command box
+       - Step instructions
+       - "Don't have an AI agent?" link at bottom
+

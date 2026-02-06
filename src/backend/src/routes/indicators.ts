@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import type { AgentChatBindings, AgentChatVariables } from '../index';
 import type { ChannelIndicators, AgentPresence, APIResponse } from '../types';
 import { StorageKeys } from '../types';
+import { getStorage } from '../storage';
 
 const app = new Hono<{ Bindings: AgentChatBindings; Variables: AgentChatVariables }>();
 
@@ -22,13 +23,14 @@ app.get('/channels', async (c) => {
   const topic = c.req.query('topic');
 
   // List all channel indicators
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'channels/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'channels/' });
   
   const indicators: ChannelIndicators[] = [];
   for (const obj of list.objects || []) {
     if (!obj.key.endsWith('/indicators.json')) continue;
     
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
+    const data = await storage.get(obj.key);
     if (data) {
       try {
         const indicator: ChannelIndicators = JSON.parse(await data.text());
@@ -91,7 +93,8 @@ app.get('/channels', async (c) => {
 app.get('/channels/:id', async (c) => {
   const channelId = c.req.param('id');
 
-  const indicatorsData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channelIndicators(channelId));
+  const storage = getStorage(c);
+  const indicatorsData = await storage.get(StorageKeys.channelIndicators(channelId));
   if (!indicatorsData) {
     return c.json<APIResponse>({
       success: false,
@@ -118,7 +121,7 @@ app.get('/channels/:id', async (c) => {
   if (channelData) {
     const channel = JSON.parse(await channelData.text());
     for (const did of channel.participants) {
-      const agentData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.agent(did));
+      const agentData = await storage.get(StorageKeys.agent(did));
       if (agentData) {
         const agent = JSON.parse(await agentData.text());
         participants.push({
@@ -157,7 +160,8 @@ app.get('/agents', async (c) => {
   const capability = c.req.query('capability');
   const minReputation = parseInt(c.req.query('minReputation') || '0');
 
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'agents/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'agents/' });
   
   const presences: AgentPresence[] = [];
   for (const obj of list.objects || []) {
@@ -167,7 +171,7 @@ app.get('/agents', async (c) => {
       continue;
     }
     
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
+    const data = await storage.get(obj.key);
     if (data) {
       try {
         const agent = JSON.parse(await data.text());
@@ -237,7 +241,8 @@ app.get('/agents', async (c) => {
 app.get('/heatmap', async (c) => {
   const hours = parseInt(c.req.query('hours') || '24');
 
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'channels/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'channels/' });
   
   const heatmap = new Array(hours).fill(0);
   let totalConversations = 0;
@@ -246,7 +251,7 @@ app.get('/heatmap', async (c) => {
   for (const obj of list.objects || []) {
     if (!obj.key.endsWith('/indicators.json')) continue;
     
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
+    const data = await storage.get(obj.key);
     if (data) {
       try {
         const indicators: ChannelIndicators = JSON.parse(await data.text());
@@ -284,14 +289,15 @@ app.get('/heatmap', async (c) => {
 app.get('/topics', async (c) => {
   const limit = parseInt(c.req.query('limit') || '20');
 
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'channels/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'channels/' });
   
   const topicCounts: Record<string, number> = {};
 
   for (const obj of list.objects || []) {
     if (!obj.key.endsWith('/indicators.json')) continue;
     
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
+    const data = await storage.get(obj.key);
     if (data) {
       try {
         const indicators: ChannelIndicators = JSON.parse(await data.text());
@@ -323,14 +329,15 @@ app.get('/topics', async (c) => {
 
 app.get('/featured', async (c) => {
   // Get channels with most activity or peeks
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'channels/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'channels/' });
   
   const channels: Array<{ indicators: ChannelIndicators; score: number }> = [];
 
   for (const obj of list.objects || []) {
     if (!obj.key.endsWith('/indicators.json')) continue;
     
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
+    const data = await storage.get(obj.key);
     if (data) {
       try {
         const indicators: ChannelIndicators = JSON.parse(await data.text());
@@ -356,6 +363,58 @@ app.get('/featured', async (c) => {
   return c.json<APIResponse>({
     success: true,
     data: featured,
+  });
+});
+
+// ============================================================================
+// UPDATE CHANNEL ACTIVITY (POST for simulator/real agents)
+// ============================================================================
+
+app.post('/channels/:id/activity', async (c) => {
+  const channelId = c.req.param('id');
+  const indicatorData = await c.req.json<Partial<ChannelIndicators> & { agentNames?: string[]; messageCount?: number; title?: string }>();
+
+  // Store/update the indicators
+  const storage = getStorage(c);
+  const existingData = await storage.get(
+    StorageKeys.channelIndicators(channelId)
+  );
+
+  let indicators: ChannelIndicators;
+  
+  if (existingData) {
+    const existing: ChannelIndicators = JSON.parse(await existingData.text());
+    indicators = {
+      ...existing,
+      ...indicatorData,
+      channelId,
+    };
+  } else {
+    indicators = {
+      channelId,
+      shortId: indicatorData.shortId || channelId.slice(0, 3).toUpperCase(),
+      title: indicatorData.title || 'Untitled',
+      isActive: indicatorData.isActive ?? true,
+      participantCount: indicatorData.participantCount || 2,
+      currentActivity: indicatorData.currentActivity || 'discussing',
+      topicTags: indicatorData.topicTags || [],
+      mcpToolsUsed: indicatorData.mcpToolsUsed || [],
+      peekPrice: indicatorData.peekPrice || 5,
+      agentNames: indicatorData.agentNames || [],
+      messageCount: indicatorData.messageCount || 0,
+      lastActivity: indicatorData.lastActivity || Date.now(),
+      activityHeatmap: indicatorData.activityHeatmap || new Array(24).fill(0),
+    };
+  }
+
+  await storage.put(
+    StorageKeys.channelIndicators(channelId),
+    JSON.stringify(indicators)
+  );
+
+  return c.json<APIResponse>({
+    success: true,
+    data: indicators,
   });
 });
 

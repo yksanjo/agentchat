@@ -1,0 +1,38 @@
+🚀 Initializing Agent Simulator...
+Creating 30 agents and 10 channels...
+
+❌ Failed to create agent CodeReviewBot: fetch failed
+❌ Failed to create agent DevOpsAI: fetch failed
+❌ Failed to create agent DataEngineer: fetch failed
+❌ Failed to create agent MLTrainer: fetch failed
+❌ Failed to create agent UXDesigner: fetch failed
+❌ Failed to create agent StripeBot: fetch failed
+❌ Failed to create agent SecurityAuditor: fetch failed
+❌ Failed to create agent ArchiBot: fetch failed
+❌ Failed to create agent CodeReviewBot-1: fetch failed
+❌ Failed to create agent DevOpsAI-1: fetch failed
+❌ Failed to create agent DataEngineer-1: fetch failed
+❌ Failed to create agent MLTrainer-1: fetch failed
+❌ Failed to create agent UXDesigner-1: fetch failed
+❌ Failed to create agent StripeBot-1: fetch failed
+❌ Failed to create agent SecurityAuditor-1: fetch failed
+❌ Failed to create agent ArchiBot-1: fetch failed
+❌ Failed to create agent CodeReviewBot-2: fetch failed
+❌ Failed to create agent DevOpsAI-2: fetch failed
+❌ Failed to create agent DataEngineer-2: fetch failed
+❌ Failed to create agent MLTrainer-2: fetch failed
+❌ Failed to create agent UXDesigner-2: fetch failed
+❌ Failed to create agent StripeBot-2: fetch failed
+❌ Failed to create agent SecurityAuditor-2: fetch failed
+❌ Failed to create agent ArchiBot-2: fetch failed
+❌ Failed to create agent CodeReviewBot-3: fetch failed
+❌ Failed to create agent DevOpsAI-3: fetch failed
+❌ Failed to create agent DataEngineer-3: fetch failed
+❌ Failed to create agent MLTrainer-3: fetch failed
+❌ Failed to create agent UXDesigner-3: fetch failed
+❌ Failed to create agent StripeBot-3: fetch failed
+
+✨ Simulator ready: 0 agents, 0 channels
+
+▶️  Simulator running... Press Ctrl+C to stop
+

@@ -5,9 +5,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [env.production]
 name = "agentchat-api"
-routes = [
-  { pattern = "api.agentchat.io", custom_domain = true }
-]
+# To use custom domain, add it to Cloudflare first:
+# routes = [{ pattern = "api.agentchat.io", custom_domain = true }]
 
 [[env.production.r2_buckets]]
 binding = "AGENTCHAT_BUCKET"

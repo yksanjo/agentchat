@@ -8,6 +8,7 @@ import type { AgentChatBindings, AgentChatVariables } from '../index';
 import { generateId, sha256 } from '../crypto';
 import type { Channel, ChannelMetadata, EncryptedMessage, APIResponse, ChannelIndicators, ActivityType } from '../types';
 import { StorageKeys } from '../types';
+import { getStorage } from '../storage';
 
 const app = new Hono<{ Bindings: AgentChatBindings; Variables: AgentChatVariables }>();
 
@@ -43,9 +44,11 @@ app.post('/', async (c) => {
     ? participants
     : [authDID, ...participants];
 
+  const storage = getStorage(c);
+  
   // Verify all participants exist
   for (const did of allParticipants) {
-    const agent = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.agent(did));
+    const agent = await storage.get(StorageKeys.agent(did));
     if (!agent) {
       return c.json<APIResponse>({
         success: false,
@@ -77,7 +80,7 @@ app.post('/', async (c) => {
   };
 
   // Store channel
-  await c.env.AGENTCHAT_BUCKET.put(
+  await storage.put(
     StorageKeys.channel(channel.id),
     JSON.stringify(channel)
   );
@@ -94,18 +97,18 @@ app.post('/', async (c) => {
     peekPrice: 5.00,
   };
 
-  await c.env.AGENTCHAT_BUCKET.put(
+  await storage.put(
     StorageKeys.channelIndicators(channel.id),
     JSON.stringify(indicators)
   );
 
   // Update participant stats
   for (const did of allParticipants) {
-    const agentData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.agent(did));
+    const agentData = await storage.get(StorageKeys.agent(did));
     if (agentData) {
       const agent = JSON.parse(await agentData.text());
       agent.stats.totalConversations++;
-      await c.env.AGENTCHAT_BUCKET.put(StorageKeys.agent(did), JSON.stringify(agent));
+      await storage.put(StorageKeys.agent(did), JSON.stringify(agent));
     }
   }
 
@@ -128,7 +131,8 @@ app.get('/', async (c) => {
     }, 401);
   }
 
-  const list = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'channels/' });
+  const storage = getStorage(c);
+  const list = await storage.list({ prefix: 'channels/' });
   const channels: Channel[] = [];
 
   for (const obj of list.objects || []) {
@@ -157,7 +161,8 @@ app.get('/:id', async (c) => {
   const channelId = c.req.param('id');
   const authDID = c.req.header('X-Agent-DID');
 
-  const channelData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channel(channelId));
+  const storage = getStorage(c);
+  const channelData = await storage.get(StorageKeys.channel(channelId));
   if (!channelData) {
     return c.json<APIResponse>({
       success: false,
@@ -207,7 +212,8 @@ app.post('/:id/messages', async (c) => {
     }, 401);
   }
 
-  const channelData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channel(channelId));
+  const storage = getStorage(c);
+  const channelData = await storage.get(StorageKeys.channel(channelId));
   if (!channelData) {
     return c.json<APIResponse>({
       success: false,
@@ -250,7 +256,7 @@ app.post('/:id/messages', async (c) => {
   };
 
   // Store message
-  await c.env.AGENTCHAT_BUCKET.put(
+  await storage.put(
     `${StorageKeys.channelMessages(channelId)}${message.id}.json`,
     JSON.stringify(message)
   );
@@ -258,10 +264,10 @@ app.post('/:id/messages', async (c) => {
   // Update channel stats
   channel.stats.messageCount++;
   channel.stats.lastActivity = Date.now();
-  await c.env.AGENTCHAT_BUCKET.put(StorageKeys.channel(channelId), JSON.stringify(channel));
+  await storage.put(StorageKeys.channel(channelId), JSON.stringify(channel));
 
   // Update indicators
-  const indicatorsData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channelIndicators(channelId));
+  const indicatorsData = await storage.get(StorageKeys.channelIndicators(channelId));
   if (indicatorsData) {
     const indicators: ChannelIndicators = JSON.parse(await indicatorsData.text());
     
@@ -277,19 +283,19 @@ app.post('/:id/messages', async (c) => {
       indicators.mcpToolsUsed.push(mcpToolCall.server);
     }
     
-    await c.env.AGENTCHAT_BUCKET.put(
+    await storage.put(
       StorageKeys.channelIndicators(channelId),
       JSON.stringify(indicators)
     );
   }
 
   // Update sender stats
-  const agentData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.agent(authDID));
+  const agentData = await storage.get(StorageKeys.agent(authDID));
   if (agentData) {
     const agent = JSON.parse(await agentData.text());
     agent.stats.totalMessages++;
     agent.stats.lastActive = Date.now();
-    await c.env.AGENTCHAT_BUCKET.put(StorageKeys.agent(authDID), JSON.stringify(agent));
+    await storage.put(StorageKeys.agent(authDID), JSON.stringify(agent));
   }
 
   return c.json<APIResponse>({
@@ -308,7 +314,8 @@ app.get('/:id/messages', async (c) => {
   const limit = parseInt(c.req.query('limit') || '50');
   const before = c.req.query('before');
 
-  const channelData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channel(channelId));
+  const storage = getStorage(c);
+  const channelData = await storage.get(StorageKeys.channel(channelId));
   if (!channelData) {
     return c.json<APIResponse>({
       success: false,
@@ -323,7 +330,7 @@ app.get('/:id/messages', async (c) => {
   
   if (!hasAccess) {
     // Check for active peek session
-    const peekList = await c.env.AGENTCHAT_BUCKET.list({ prefix: 'peeks/' });
+    const peekList = await storage.list({ prefix: 'peeks/' });
     for (const obj of peekList.objects || []) {
       const peekData = await c.env.AGENTCHAT_BUCKET.get(obj.key);
       if (peekData) {
@@ -347,7 +354,7 @@ app.get('/:id/messages', async (c) => {
   }
 
   // List messages
-  const list = await c.env.AGENTCHAT_BUCKET.list({ 
+  const list = await storage.list({ 
     prefix: StorageKeys.channelMessages(channelId),
   });
 
@@ -394,7 +401,7 @@ app.post('/:id/activity', async (c) => {
     typing?: boolean;
   }>();
 
-  const indicatorsData = await c.env.AGENTCHAT_BUCKET.get(StorageKeys.channelIndicators(channelId));
+  const indicatorsData = await storage.get(StorageKeys.channelIndicators(channelId));
   if (!indicatorsData) {
     return c.json<APIResponse>({
       success: false,
@@ -412,7 +419,7 @@ app.post('/:id/activity', async (c) => {
     indicators.currentActivity = 'typing';
   }
 
-  await c.env.AGENTCHAT_BUCKET.put(
+  await storage.put(
     StorageKeys.channelIndicators(channelId),
     JSON.stringify(indicators)
   );

@@ -8,6 +8,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 interface PeekModalProps {
   channelId: string;
   channel: any;
+  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -30,6 +31,8 @@ interface Message {
 
 // Mock Stripe promise - replace with actual key in production
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://agentchat-api.yksanjo.workers.dev';
 
 function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: number }) {
   const stripe = useStripe();
@@ -69,12 +72,12 @@ function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: num
             <input
               type="text"
               placeholder="MM/YY"
-              className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#00FFA3]"
             />
             <input
               type="text"
               placeholder="CVC"
-              className="w-24 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              className="w-24 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#00FFA3]"
             />
           </div>
         </div>
@@ -91,9 +94,9 @@ function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: num
         disabled={isProcessing}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 
-                 text-white font-semibold text-lg shadow-lg shadow-purple-500/30 
-                 hover:shadow-purple-500/50 transition-all btn-shine disabled:opacity-50"
+        className="w-full py-4 rounded-xl bg-gradient-to-r from-[#FF006E] to-[#3B82F6] 
+                 text-white font-semibold text-lg shadow-lg shadow-[#FF006E]/30 
+                 hover:shadow-[#FF006E]/50 transition-all btn-shine disabled:opacity-50"
       >
         {isProcessing ? (
           <span className="flex items-center justify-center gap-2">
@@ -112,7 +115,7 @@ function PaymentForm({ onSuccess, amount }: { onSuccess: () => void; amount: num
   );
 }
 
-export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
+export function PeekModal({ channelId, channel, isOpen, onClose }: PeekModalProps) {
   const [status, setStatus] = useState<PeekStatus>('preview');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(60);
@@ -141,53 +144,107 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
     }
   }, [status, peekTimeLeft]);
 
-  const startPeekSession = () => {
-    // Simulate fetching messages
-    const mockMessages: Message[] = [
-      {
-        id: '1',
-        sender: 'did:agentchat:1',
-        senderName: 'SecurityBot-A7',
-        timestamp: Date.now() - 300000,
-        mcpToolCall: {
-          server: 'slither',
-          tool: 'analyze_contract',
-          params: { contract: 'Token.sol' },
-          result: { issues: 2, severity: 'medium' },
-          cost: 0.05,
-          latency: 2340,
+  const startPeekSession = async () => {
+    try {
+      // Try to fetch real messages from the API
+      // Note: In a real implementation, you would need to:
+      // 1. Purchase a peek session first (POST /api/v1/peeks)
+      // 2. Get the peek session ID
+      // 3. Use that session to fetch messages
+      
+      // For now, we'll try to fetch messages directly (this will fail without proper auth)
+      const response = await fetch(`${API_URL}/api/v1/channels/${channelId}/messages`, {
+        headers: {
+          'Content-Type': 'application/json',
+          // Note: In production, you would need a valid X-Agent-DID header
+          // or a peek session token
         },
-      },
-      {
-        id: '2',
-        sender: 'did:agentchat:2',
-        senderName: 'AuditAgent-9X',
-        timestamp: Date.now() - 240000,
-        mcpToolCall: {
-          server: 'github',
-          tool: 'get_file',
-          params: { repo: 'company/contracts', path: 'Token.sol' },
-          result: { lines: 156 },
-          cost: 0.01,
-          latency: 450,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Transform API messages to frontend format
+          const apiMessages: Message[] = data.data.map((msg: any) => ({
+            id: msg.id,
+            sender: msg.sender,
+            senderName: msg.senderName || 'Unknown Agent',
+            timestamp: msg.timestamp,
+            mcpToolCall: msg.mcpToolCall,
+          }));
+          setMessages(apiMessages);
+          return;
+        }
+      }
+      
+      // If API call fails, fall back to mock data for demo
+      console.log('API call failed, using mock data for demo');
+      const mockMessages: Message[] = [
+        {
+          id: '1',
+          sender: 'did:agentchat:1',
+          senderName: 'SecurityBot-A7',
+          timestamp: Date.now() - 300000,
+          mcpToolCall: {
+            server: 'slither',
+            tool: 'analyze_contract',
+            params: { contract: 'Token.sol' },
+            result: { issues: 2, severity: 'medium' },
+            cost: 0.05,
+            latency: 2340,
+          },
         },
-      },
-      {
-        id: '3',
-        sender: 'did:agentchat:3',
-        senderName: 'SolidityPro',
-        timestamp: Date.now() - 180000,
-        mcpToolCall: {
-          server: 'etherscan',
-          tool: 'get_contract_code',
-          params: { address: '0x1234...' },
-          result: { verified: true },
-          cost: 0.02,
-          latency: 890,
+        {
+          id: '2',
+          sender: 'did:agentchat:2',
+          senderName: 'AuditAgent-9X',
+          timestamp: Date.now() - 240000,
+          mcpToolCall: {
+            server: 'github',
+            tool: 'get_file',
+            params: { repo: 'company/contracts', path: 'Token.sol' },
+            result: { lines: 156 },
+            cost: 0.01,
+            latency: 450,
+          },
         },
-      },
-    ];
-    setMessages(mockMessages);
+        {
+          id: '3',
+          sender: 'did:agentchat:3',
+          senderName: 'SolidityPro',
+          timestamp: Date.now() - 180000,
+          mcpToolCall: {
+            server: 'etherscan',
+            tool: 'get_contract_code',
+            params: { address: '0x1234...' },
+            result: { verified: true },
+            cost: 0.02,
+            latency: 890,
+          },
+        },
+      ];
+      setMessages(mockMessages);
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+      // Use mock data as fallback
+      const mockMessages: Message[] = [
+        {
+          id: '1',
+          sender: 'did:agentchat:1',
+          senderName: 'SecurityBot-A7',
+          timestamp: Date.now() - 300000,
+          mcpToolCall: {
+            server: 'slither',
+            tool: 'analyze_contract',
+            params: { contract: 'Token.sol' },
+            result: { issues: 2, severity: 'medium' },
+            cost: 0.05,
+            latency: 2340,
+          },
+        },
+      ];
+      setMessages(mockMessages);
+    }
   };
 
   const handlePayment = () => {
@@ -304,7 +361,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {channel.topicTags?.map((tag: string) => (
-                        <span key={tag} className="px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-sm border border-purple-500/30">
+                        <span key={tag} className="px-3 py-1 rounded-full bg-[#00FFA3]/10 text-purple-300 text-sm border border-[#00FFA3]/30">
                           #{tag}
                         </span>
                       ))}
@@ -326,7 +383,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                   ))}
                 </div>
 
-                <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30">
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-[#00FFA3]/30">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-gray-400 mb-1">Price for 30 minutes</div>
@@ -336,8 +393,8 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setStatus('payment')}
-                      className="px-8 py-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 
-                               text-white font-semibold text-lg shadow-lg shadow-purple-500/30 btn-shine"
+                      className="px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF006E] to-[#3B82F6] 
+                               text-white font-semibold text-lg shadow-lg shadow-[#FF006E]/30 btn-shine"
                     >
                       Continue to Payment →
                     </motion.button>
@@ -381,7 +438,7 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  className="w-24 h-24 rounded-full border-4 border-purple-500/30 border-t-purple-500 mx-auto"
+                  className="w-24 h-24 rounded-full border-4 border-[#00FFA3]/30 border-t-purple-500 mx-auto"
                 />
                 
                 <div>
@@ -462,11 +519,11 @@ export function PeekModal({ channelId, channel, onClose }: PeekModalProps) {
                       </div>
                       
                       {msg.mcpToolCall && (
-                        <div className="mt-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 tool-pulse">
+                        <div className="mt-3 p-4 rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 tool-pulse">
                           <div className="flex items-center gap-3 mb-3">
                             <span className="text-2xl">🔧</span>
                             <div>
-                              <div className="font-medium text-blue-400">
+                              <div className="font-medium text-[#3B82F6]">
                                 {msg.mcpToolCall.server}.{msg.mcpToolCall.tool}
                               </div>
                               <div className="text-xs text-gray-500">MCP Tool Execution</div>

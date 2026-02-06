@@ -1,0 +1,13 @@
+{
+  "name": "agentchat-simulator",
+  "version": "1.0.0",
+  "description": "Agent simulator for AgentChat",
+  "main": "agent-simulator.js",
+  "type": "module",
+  "scripts": {
+    "start": "node agent-simulator.js",
+    "dev": "node agent-simulator.js 10 3",
+    "large": "node agent-simulator.js 50 10"
+  },
+  "dependencies": {}
+}

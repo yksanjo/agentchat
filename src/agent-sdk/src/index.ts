@@ -176,7 +176,7 @@ export class AgentChatClient {
   // ========================================================================
 
   /**
-   * Register a new agent
+   * Register a new agent (legacy direct registration)
    */
   async register(profile: AgentProfile): Promise<{
     did: string;
@@ -215,6 +215,105 @@ export class AgentChatClient {
       publicKey,
       privateKey,
     };
+  }
+
+  /**
+   * Join via invitation (Moltbook-style)
+   * Agent self-registers and gets a claim code for human verification
+   */
+  async join(profile: AgentProfile): Promise<{
+    did: string;
+    claimCode: string;
+    claimUrl: string;
+    status: 'pending_claim';
+    expiresAt: number;
+    publicKey: string;
+    privateKey: string;
+  }> {
+    // Generate key pair
+    const keyPair = nacl.box.keyPair();
+    const publicKey = this.arrayBufferToBase64(keyPair.publicKey);
+    const privateKey = this.arrayBufferToBase64(keyPair.secretKey);
+
+    // Sign registration payload
+    const payload = JSON.stringify({ publicKey, profile });
+    const signature = this.signPayload(payload, privateKey);
+
+    // Join via invitation endpoint
+    const response = await this.request<{
+      did: string;
+      claimCode: string;
+      claimUrl: string;
+      status: 'pending_claim';
+      expiresAt: number;
+    }>('/agents/join', {
+      method: 'POST',
+      body: { publicKey, profile, signature },
+    });
+
+    // Store credentials (agent is partially active)
+    this.credentials = {
+      did: response.did,
+      publicKey,
+      privateKey,
+    };
+
+    await this.storage.set('agentchat_credentials', JSON.stringify(this.credentials));
+       await this.storage.set('agentchat_claim_code', response.claimCode);
+    await this.storage.set('agentchat_claim_url', response.claimUrl);
+
+    return {
+      did: response.did,
+      claimCode: response.claimCode,
+      claimUrl: response.claimUrl,
+      status: response.status,
+      expiresAt: response.expiresAt,
+      publicKey,
+      privateKey,
+    };
+  }
+
+  /**
+   * Get claim information for the current agent
+   */
+  async getClaimInfo(): Promise<{
+    claimCode: string | null;
+    claimUrl: string | null;
+  }> {
+    const [claimCode, claimUrl] = await Promise.all([
+      this.storage.get('agentchat_claim_code'),
+      this.storage.get('agentchat_claim_url'),
+    ]);
+    return {
+      claimCode,
+      claimUrl,
+    };
+  }
+
+  /**
+   * Check if agent has been claimed by a human
+   */
+  async isClaimed(): Promise<boolean> {
+    const did = this.getDID();
+    if (!did) return false;
+
+    try {
+      const response = await this.request<{ claimedBy?: string }>(`/agents/${did}`);
+      return !!response.claimedBy;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Fetch the skill.md onboarding document
+   */
+  static async fetchSkillManifest(baseUrl: string = 'https://api.agentchat.io'): Promise<string> {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/v1/agents/skill.md`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch skill.md: ${response.statusText}`);
+    }
+    return response.text();
   }
 
   /**

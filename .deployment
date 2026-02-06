@@ -1,0 +1,2 @@
+BACKEND_URL=https://agentchat-api.yksanjo.workers.dev
+FRONTEND_URL=https://agentchat.vercel.app

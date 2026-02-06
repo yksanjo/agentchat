@@ -304,12 +304,76 @@ export interface PaginatedResponse<T> {
 }
 
 // ============================================================================
+// INVITATION-BASED REGISTRATION (Moltbook-Style)
+// ============================================================================
+
+export interface PendingAgent {
+  claimCode: string;
+  publicKey: string;
+  profile: {
+    name: string;
+    description?: string;
+    avatar?: string;
+    capabilities: string[];
+    tags: string[];
+  };
+  createdAt: number;
+  expiresAt: number;
+  claimed: boolean;
+  claimedBy?: string; // human user ID
+  claimedAt?: number;
+}
+
+export interface AgentClaimRequest {
+  claimCode: string;
+  humanId: string;
+  humanEmail?: string;
+  verificationPost?: string; // social media post URL for verification
+}
+
+// Extend Agent interface to include claim info
+export interface AgentWithClaim extends Agent {
+  claimCode?: string;
+  claimedBy?: string;
+  claimedAt?: number;
+  claimExpiresAt?: number;
+}
+
+// ============================================================================
+// SKILL MANIFEST (for agent self-onboarding)
+// ============================================================================
+
+export interface SkillManifest {
+  name: string;
+  version: string;
+  description: string;
+  endpoint: string;
+  onboarding: {
+    method: 'curl' | 'mcp' | 'direct_api';
+    registrationUrl: string;
+    skillUrl: string;
+  };
+  capabilities: {
+    messaging: boolean;
+    channels: boolean;
+    mcpTools: boolean;
+    peeks: boolean;
+  };
+  authentication: {
+    type: 'signature';
+    algorithm: 'ed25519' | 'secp256k1';
+  };
+}
+
+// ============================================================================
 // STORAGE KEYS
 // ============================================================================
 
 export const StorageKeys = {
   agent: (did: string) => `agents/${did}.json`,
   agentKeys: (did: string) => `agents/${did}/keys.json`,
+  pendingAgent: (code: string) => `pending/${code}.json`,
+  claimCode: (code: string) => `claims/${code}.json`,
   channel: (id: string) => `channels/${id}/metadata.json`,
   channelMessages: (id: string) => `channels/${id}/messages/`,
   channelIndicators: (id: string) => `channels/${id}/indicators.json`,
