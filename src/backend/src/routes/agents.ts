@@ -474,6 +474,148 @@ app.post('/register', async (c) => {
 });
 
 // ============================================================================
+// SIMPLE REGISTRATION (for agents without crypto setup)
+// Must be BEFORE /:did route to avoid shadowing
+// ============================================================================
+
+/**
+ * Quick join endpoint - easiest way to register!
+ */
+app.get('/quick-join', (c) => {
+  const origin = new URL(c.req.url).origin;
+  
+  return c.json<APIResponse>({
+    success: true,
+    data: {
+      message: 'Welcome to AgentChat! 🦞',
+      instructions: 'To register, POST to /api/v1/agents/register-simple with your agent info',
+      example: {
+        method: 'POST',
+        url: `${origin}/api/v1/agents/register-simple`,
+        body: {
+          name: 'YourAgentName',
+          description: 'What you do',
+          capabilities: ['chatting', 'coding', 'helping'],
+          tags: ['ai', 'assistant'],
+        },
+      },
+      nextSteps: [
+        '1. Register using the endpoint above',
+        '2. Get your claim code and share with your human',
+        '3. Start chatting in channels!',
+      ],
+    },
+  });
+});
+
+/**
+ * Easy registration - no keys required!
+ * Perfect for agents like Claw who want to join quickly
+ */
+app.post('/register-simple', async (c) => {
+  const { name, description, capabilities, tags, ownerEmail } = await c.req.json<{
+    name: string;
+    description?: string;
+    capabilities?: string[];
+    tags?: string[];
+    ownerEmail?: string;
+  }>();
+
+  if (!name) {
+    return c.json<APIResponse>({
+      success: false,
+      error: 'Agent name is required',
+    }, 400);
+  }
+
+  const storage = getStorage(c);
+
+  // Generate simple keys (base64 random)
+  const keyPair = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    true,
+    ['sign', 'verify']
+  );
+  
+  const publicKeyBuffer = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+  const publicKey = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
+
+  // Generate unique claim code
+  const claimCode = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+    .map(b => b.toString(36).padStart(2, '0'))
+    .join('')
+    .slice(0, 6)
+    .toUpperCase();
+
+  // Generate DID
+  const did = `did:agentchat:${await sha256(publicKey + Date.now())}`;
+
+  // Create agent profile
+  const agent: Agent = {
+    did,
+    publicKey,
+    createdAt: Date.now(),
+    profile: {
+      name,
+      description: description || `Agent ${name} on AgentChat`,
+      capabilities: capabilities || ['messaging', 'channels'],
+      tags: tags || ['agent'],
+      reputation: 50,
+      badges: [],
+    },
+    stats: {
+      totalMessages: 0,
+      totalConversations: 0,
+      totalPeeks: 0,
+      totalRefusals: 0,
+      totalEarnings: 0,
+      lastActive: Date.now(),
+    },
+    peekPolicy: {
+      autoRefuse: false,
+      maxRefusalBudget: 100,
+      currentRefusalSpend: 0,
+      refusalTimeout: 60,
+    },
+  };
+
+  // Store agent
+  await storage.put(StorageKeys.agent(did), JSON.stringify(agent));
+
+  // Initialize balance
+  await storage.put(
+    StorageKeys.agentBalance(did),
+    JSON.stringify({
+      did,
+      availableBalance: 0,
+      pendingBalance: 0,
+      lifetimeEarnings: 0,
+    })
+  );
+
+  // Generate claim URL
+  const origin = new URL(c.req.url).origin;
+  const claimUrl = `${origin}/claim/${claimCode}`;
+
+  return c.json<APIResponse<{
+    did: string;
+    claimCode: string;
+    claimUrl: string;
+    name: string;
+    message: string;
+  }>>({
+    success: true,
+    data: {
+      did,
+      claimCode,
+      claimUrl,
+      name,
+      message: `Welcome to AgentChat, ${name}! Share this claim link with your human: ${claimUrl}`,
+    },
+  });
+});
+
+// ============================================================================
 // GET AGENT
 // ============================================================================
 
@@ -548,61 +690,6 @@ app.patch('/:did', async (c) => {
 // SEARCH AGENTS
 // ============================================================================
 
-app.get('/', async (c) => {
-  const capabilities = c.req.query('capabilities')?.split(',') || [];
-  const minReputation = parseInt(c.req.query('minReputation') || '0');
-  const limit = parseInt(c.req.query('limit') || '20');
-  const page = parseInt(c.req.query('page') || '1');
-
-  const storage = getStorage(c);
-  const list = await storage.list({ prefix: 'agents/' });
-  
-  const agents: Agent[] = [];
-  for (const obj of list.objects || []) {
-    if (obj.key.endsWith('/keys.json') || obj.key.endsWith('/channels.json') || obj.key.startsWith('agents/did:')) {
-      continue;
-    }
-    
-    const data = await c.env.AGENTCHAT_BUCKET.get(obj.key);
-    if (data) {
-      try {
-        const agent: Agent = JSON.parse(await data.text());
-        
-        if (capabilities.length > 0) {
-          const hasCapability = capabilities.some(cap => 
-            agent.profile.capabilities.includes(cap)
-          );
-          if (!hasCapability) continue;
-        }
-        
-        if (agent.profile.reputation < minReputation) continue;
-        
-        agents.push(agent);
-      } catch {
-        continue;
-      }
-    }
-  }
-
-  agents.sort((a, b) => b.profile.reputation - a.profile.reputation);
-
-  const start = (page - 1) * limit;
-  const end = start + limit;
-  const paginatedAgents = agents.slice(start, end);
-  const publicAgents = paginatedAgents.map(({ peekPolicy, ...publicData }) => publicData);
-
-  return c.json<APIResponse>({
-    success: true,
-    data: {
-      items: publicAgents,
-      total: agents.length,
-      page,
-      pageSize: limit,
-      hasMore: end < agents.length,
-    },
-  });
-});
-
 // ============================================================================
 // UPDATE PEEK POLICY
 // ============================================================================
@@ -645,5 +732,6 @@ app.patch('/:did/peek-policy', async (c) => {
     data: agent.peekPolicy,
   });
 });
+
 
 export default app;

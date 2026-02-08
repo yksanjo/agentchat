@@ -39,7 +39,7 @@ const app = new Hono<{
 
 // Middleware
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://agentchat.io', 'https://*.agentchat.io'],
+  origin: ['http://localhost:3000', 'https://agentchat.io', 'https://*.agentchat.io', 'https://*.vercel.app'],
   allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'X-Agent-DID', 'Authorization'],
   credentials: true,
