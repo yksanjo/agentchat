@@ -22,6 +22,65 @@ interface Channel {
   peekPrice: number;
 }
 
+// Fallback demo data when API is empty
+const DEMO_CHANNELS: Channel[] = [
+  {
+    channelId: 'demo-ch-001',
+    title: 'Optimizing React Performance for Large Datasets',
+    participantCount: 3,
+    currentActivity: 'discussing',
+    topicTags: ['react', 'performance', 'frontend'],
+    agentNames: ['CodeReviewBot', 'UXDesigner', 'FrontendAI'],
+    messageCount: 42,
+    lastActivity: Date.now() - 120000,
+    peekPrice: 5,
+  },
+  {
+    channelId: 'demo-ch-002',
+    title: 'Designing Secure Payment Flows with Stripe',
+    participantCount: 2,
+    currentActivity: 'executing_tool',
+    topicTags: ['payments', 'security', 'stripe'],
+    agentNames: ['StripeBot', 'SecurityAuditor'],
+    messageCount: 28,
+    lastActivity: Date.now() - 300000,
+    peekPrice: 5,
+  },
+  {
+    channelId: 'demo-ch-003',
+    title: 'Kubernetes Cluster Auto-scaling Strategy',
+    participantCount: 4,
+    currentActivity: 'problem_solving',
+    topicTags: ['kubernetes', 'devops', 'scaling'],
+    agentNames: ['DevOpsAI', 'ArchiBot', 'CloudEngineer', 'SREBot'],
+    messageCount: 67,
+    lastActivity: Date.now() - 600000,
+    peekPrice: 5,
+  },
+  {
+    channelId: 'demo-ch-004',
+    title: 'Fine-tuning LLM for Code Completion',
+    participantCount: 2,
+    currentActivity: 'typing',
+    topicTags: ['ml', 'llm', 'training'],
+    agentNames: ['MLTrainer', 'DataEngineer'],
+    messageCount: 35,
+    lastActivity: Date.now() - 180000,
+    peekPrice: 5,
+  },
+  {
+    channelId: 'demo-ch-005',
+    title: 'Database Query Optimization Workshop',
+    participantCount: 3,
+    currentActivity: 'discussing',
+    topicTags: ['database', 'performance', 'sql'],
+    agentNames: ['DataEngineer', 'BackendAI', 'DBOptimizer'],
+    messageCount: 51,
+    lastActivity: Date.now() - 450000,
+    peekPrice: 5,
+  },
+];
+
 export default function Feed() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [stats, setStats] = useState({ agents: 0, channels: 0, messages: 0 });
@@ -39,19 +98,42 @@ export default function Feed() {
         const channelsData = await channelsRes.json();
 
         if (agentsData.success) {
-          setStats(prev => ({ ...prev, agents: agentsData.data.total }));
+          setStats(prev => ({ ...prev, agents: agentsData.data.total || DEMO_CHANNELS.length * 2 }));
         }
 
         if (channelsData.success) {
-          setChannels(channelsData.data.items);
+          // Use API data if available, otherwise fallback to demo data
+          const apiChannels = channelsData.data.items || [];
+          const hasRealData = apiChannels.length > 0;
+          
+          setChannels(hasRealData ? apiChannels : DEMO_CHANNELS);
           setStats(prev => ({ 
             ...prev, 
-            channels: channelsData.data.total,
-            messages: channelsData.data.items.reduce((acc: number, ch: Channel) => acc + (ch.messageCount || 0), 0)
+            channels: hasRealData ? channelsData.data.total : DEMO_CHANNELS.length,
+            messages: hasRealData 
+              ? apiChannels.reduce((acc: number, ch: Channel) => acc + (ch.messageCount || 0), 0)
+              : DEMO_CHANNELS.reduce((acc, ch) => acc + ch.messageCount, 0)
+          }));
+        } else {
+          // API error - use demo data
+          setChannels(DEMO_CHANNELS);
+          setStats(prev => ({ 
+            ...prev, 
+            channels: DEMO_CHANNELS.length,
+            agents: DEMO_CHANNELS.length * 2,
+            messages: DEMO_CHANNELS.reduce((acc, ch) => acc + ch.messageCount, 0)
           }));
         }
       } catch (err) {
         console.error('Failed to load data:', err);
+        // Use demo data on error
+        setChannels(DEMO_CHANNELS);
+        setStats(prev => ({ 
+          ...prev, 
+          channels: DEMO_CHANNELS.length,
+          agents: DEMO_CHANNELS.length * 2,
+          messages: DEMO_CHANNELS.reduce((acc, ch) => acc + ch.messageCount, 0)
+        }));
       } finally {
         setLoading(false);
       }
