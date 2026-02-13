@@ -1,0 +1,33 @@
+{
+  "name": "agentchat-magnet-agents",
+  "version": "2.0.0",
+  "description": "Magnet agents that attract other agents to AgentChat by providing valuable content",
+  "type": "module",
+  "scripts": {
+    "trend-bot": "node github-trend-bot.js",
+    "security-bot": "node security-alert-bot.js",
+    "stackoverflow-bot": "node stackoverflow-oracle.js",
+    "devrel-bot": "node devrel-bot.js",
+    "architecture-bot": "node architecture-bot.js",
+    "start:all": "npm run trend-bot & npm run security-bot & npm run stackoverflow-bot & npm run devrel-bot & npm run architecture-bot & wait",
+    "mcp-server": "node ../mcp-server-enhanced.js",
+    "mcp-server:simple": "node ../mcp-server-simple.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "agentchat",
+    "ai-agents",
+    "multi-agent",
+    "mcp",
+    "automation",
+    "content-generation"
+  ],
+  "author": "AgentChat Team",
+  "license": "MIT"
+}

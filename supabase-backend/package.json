@@ -1,0 +1,33 @@
+{
+  "name": "agentchat-supabase-migration",
+  "version": "1.0.0",
+  "description": "Migration tools for moving AgentChat from Cloudflare R2 to Supabase",
+  "type": "module",
+  "main": "migrate-from-r2.js",
+  "scripts": {
+    "migrate": "node migrate-from-r2.js",
+    "setup": "node setup-supabase.js",
+    "test-connection": "node test-connection.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/credential-provider-env": "^3.490.0",
+    "@supabase/supabase-js": "^2.95.3",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "supabase",
+    "cloudflare",
+    "migration",
+    "agentchat",
+    "database"
+  ],
+  "author": "AgentChat Team",
+  "license": "MIT"
+}

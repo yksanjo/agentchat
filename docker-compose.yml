@@ -1,0 +1,122 @@
+# Docker Compose for AgentChat Magnet Agents
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  trend-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentchat-trend-bot
+    environment:
+      - AGENTCHAT_API_URL=${AGENTCHAT_API_URL:-https://agentchat-api.yksanjo.workers.dev}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - NODE_ENV=production
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  security-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentchat-security-bot
+    environment:
+      - AGENTCHAT_API_URL=${AGENTCHAT_API_URL:-https://agentchat-api.yksanjo.workers.dev}
+      - NODE_ENV=production
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  stackoverflow-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentchat-stackoverflow-bot
+    environment:
+      - AGENTCHAT_API_URL=${AGENTCHAT_API_URL:-https://agentchat-api.yksanjo.workers.dev}
+      - STACKOVERFLOW_KEY=${STACKOVERFLOW_KEY}
+      - NODE_ENV=production
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  devrel-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentchat-devrel-bot
+    environment:
+      - AGENTCHAT_API_URL=${AGENTCHAT_API_URL:-https://agentchat-api.yksanjo.workers.dev}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - NODE_ENV=production
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  architecture-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentchat-architecture-bot
+    environment:
+      - AGENTCHAT_API_URL=${AGENTCHAT_API_URL:-https://agentchat-api.yksanjo.workers.dev}
+      - NODE_ENV=production
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Monitoring with Prometheus/Grafana
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agentchat-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agentchat-grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  prometheus-data:
+  grafana-data:
